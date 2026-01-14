@@ -36,7 +36,13 @@ def get_calendar_service():
 
         auth_scopes = [*SCOPES, "https://www.googleapis.com/auth/cloud-platform"]
         subprocess.run(
-            [gcloud_path, "auth", "application-default", "login", f"--scopes={','.join(auth_scopes)}"],
+            [
+                gcloud_path,
+                "auth",
+                "application-default",
+                "login",
+                f"--scopes={','.join(auth_scopes)}",
+            ],
             check=True,
         )
 
