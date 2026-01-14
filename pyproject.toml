@@ -1,12 +1,57 @@
 [project]
 name = "gcal-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "MCP server for querying Google Calendar events"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+authors = [
+    { name = "Al Duncanson", email = "alDuncanson@proton.me" }
+]
+keywords = [
+    "mcp",
+    "google-calendar",
+    "calendar",
+    "ai",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 dependencies = [
     "fastmcp<3",
     "google-api-python-client>=2.188.0",
     "google-auth-httplib2>=0.3.0",
     "google-auth-oauthlib>=1.2.3",
 ]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/alDuncanson/gcal-mcp"
+Repository = "https://github.com/alDuncanson/gcal-mcp"
+Issues = "https://github.com/alDuncanson/gcal-mcp/issues"
+Changelog = "https://github.com/alDuncanson/gcal-mcp/releases"
+
+[project.scripts]
+gcal-mcp = "gcal_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.9.15,<0.10.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "src"

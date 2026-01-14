@@ -16,11 +16,23 @@ SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 mcp = FastMCP("Google Calendar")
 
 
+def get_config_dir() -> Path:
+    """Get the configuration directory for storing credentials.
+
+    Uses GCAL_MCP_CONFIG_DIR env var if set, otherwise ~/.config/gcal-mcp/
+    """
+    if config_dir := os.environ.get("GCAL_MCP_CONFIG_DIR"):
+        return Path(config_dir)
+    return Path.home() / ".config" / "gcal-mcp"
+
+
 def get_calendar_service():
     """Authenticate and return Google Calendar service."""
     creds = None
-    token_path = Path("token.json")
-    credentials_path = Path("credentials.json")
+    config_dir = get_config_dir()
+    config_dir.mkdir(parents=True, exist_ok=True)
+    token_path = config_dir / "token.json"
+    credentials_path = config_dir / "credentials.json"
 
     if token_path.exists():
         creds = Credentials.from_authorized_user_file(str(token_path), SCOPES)
@@ -31,10 +43,13 @@ def get_calendar_service():
         else:
             if not credentials_path.exists():
                 raise FileNotFoundError(
-                    "credentials.json not found. Download it from Google Cloud Console: "
+                    f"credentials.json not found at {credentials_path}. "
+                    "Download it from Google Cloud Console: "
                     "https://console.cloud.google.com/apis/credentials"
                 )
-            flow = InstalledAppFlow.from_client_secrets_file(str(credentials_path), SCOPES)
+            flow = InstalledAppFlow.from_client_secrets_file(
+                str(credentials_path), SCOPES
+            )
             creds = flow.run_local_server(port=0)
         token_path.write_text(creds.to_json())
 
@@ -132,7 +147,9 @@ def get_events_for_date(date: str, calendar_id: str = "primary") -> str:
 
 
 @mcp.tool
-def search_events(query: str, max_results: int = 10, calendar_id: str = "primary") -> str:
+def search_events(
+    query: str, max_results: int = 10, calendar_id: str = "primary"
+) -> str:
     """Search calendar events by keyword.
 
     Args:
@@ -204,5 +221,10 @@ def list_calendars() -> str:
         return f"Error listing calendars: {error}"
 
 
-if __name__ == "__main__":
+def main():
+    """Entry point for the MCP server."""
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()
