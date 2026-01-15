@@ -9,11 +9,12 @@ authors = [
     { name = "Al Duncanson", email = "alDuncanson@proton.me" }
 ]
 keywords = [
+    "google",
+    "oauth",
     "mcp",
-    "google-calendar",
+    "tool",
     "calendar",
-    "ai",
-    "llm",
+    "search",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
