@@ -1,7 +1,9 @@
 """Google Calendar MCP Server - Query upcoming calendar events."""
 
+import argparse
 import datetime
 import json
+import sys
 from pathlib import Path
 
 from fastmcp import FastMCP
@@ -10,11 +12,13 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
+__version__ = "0.1.4"
+
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
 TOKEN_PATH = Path.home() / ".config" / "gcal-mcp" / "token.json"
 
-CLIENT_CONFIG = {
+DEFAULT_CLIENT_CONFIG = {
     "installed": {
         "client_id": "894785146012-rih2k2gtd97l3aqlvibgcmeipp30tl24.apps.googleusercontent.com",
         "client_secret": "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",
@@ -23,6 +27,8 @@ CLIENT_CONFIG = {
         "redirect_uris": ["http://localhost"],
     }
 }
+
+_client_config = DEFAULT_CLIENT_CONFIG.copy()
 
 mcp = FastMCP("Google Calendar")
 
@@ -48,7 +54,7 @@ def get_calendar_service():
 
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_config(CLIENT_CONFIG, SCOPES)
+            flow = InstalledAppFlow.from_client_config(_client_config, SCOPES)
             creds = flow.run_local_server(port=0)
 
         TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -222,8 +228,47 @@ def list_calendars() -> str:
         return f"Error listing calendars: {error}"
 
 
+def set_credentials(credentials_path: Path) -> None:
+    """Override OAuth credentials from a JSON file.
+
+    Args:
+        credentials_path: Path to OAuth credentials JSON file
+    """
+    global _client_config
+    try:
+        config = json.loads(credentials_path.read_text())
+        if "installed" in config or "web" in config:
+            _client_config = config
+        else:
+            _client_config = {"installed": config}
+    except (json.JSONDecodeError, FileNotFoundError) as e:
+        print(f"Error loading credentials: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     """Entry point for the MCP server."""
+    parser = argparse.ArgumentParser(
+        prog="gcal-mcp",
+        description="MCP server for querying Google Calendar events",
+    )
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
+    parser.add_argument(
+        "-c", "--credentials",
+        type=Path,
+        metavar="FILE",
+        help="Path to OAuth credentials JSON file (overrides default credentials)",
+    )
+
+    args = parser.parse_args()
+
+    if args.credentials:
+        set_credentials(args.credentials)
+
     mcp.run()
 
 
