@@ -1,53 +1,60 @@
 """Google Calendar MCP Server - Query upcoming calendar events."""
 
 import datetime
-import shutil
-import subprocess
+import json
+from pathlib import Path
 
-import google.auth
-from google.auth.exceptions import DefaultCredentialsError
 from fastmcp import FastMCP
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
 
+TOKEN_PATH = Path.home() / ".config" / "gcal-mcp" / "token.json"
+
+CLIENT_CONFIG = {
+    "installed": {
+        "client_id": "894785146012-rih2k2gtd97l3aqlvibgcmeipp30tl24.apps.googleusercontent.com",
+        "client_secret": "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",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
+        "redirect_uris": ["http://localhost"],
+    }
+}
+
 mcp = FastMCP("Google Calendar")
 
 
 def get_calendar_service():
-    """Authenticate using Application Default Credentials and return Google Calendar service.
+    """Authenticate using OAuth and return Google Calendar service.
 
-    Automatically prompts for authentication via gcloud if credentials are missing.
+    Uses saved credentials from token.json if available, otherwise
+    initiates OAuth flow via local server.
     """
-    try:
-        creds, _ = google.auth.default(scopes=SCOPES)
-        return build("calendar", "v3", credentials=creds)
-    except DefaultCredentialsError:
-        gcloud_path = shutil.which("gcloud")
-        if not gcloud_path:
-            raise RuntimeError(
-                "No Google credentials found and gcloud CLI is not installed.\n"
-                "Install gcloud: https://cloud.google.com/sdk/docs/install\n"
-                "Then run: gcloud auth application-default login "
-                "--scopes=https://www.googleapis.com/auth/calendar.readonly,"
-                "https://www.googleapis.com/auth/cloud-platform"
-            )
+    creds = None
 
-        auth_scopes = [*SCOPES, "https://www.googleapis.com/auth/cloud-platform"]
-        subprocess.run(
-            [
-                gcloud_path,
-                "auth",
-                "application-default",
-                "login",
-                f"--scopes={','.join(auth_scopes)}",
-            ],
-            check=True,
-        )
+    if TOKEN_PATH.exists():
+        try:
+            token_data = json.loads(TOKEN_PATH.read_text())
+            creds = Credentials.from_authorized_user_info(token_data, SCOPES)
+        except (json.JSONDecodeError, ValueError):
+            pass
 
-        creds, _ = google.auth.default(scopes=SCOPES)
-        return build("calendar", "v3", credentials=creds)
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            from google.auth.transport.requests import Request
+
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_config(CLIENT_CONFIG, SCOPES)
+            creds = flow.run_local_server(port=0)
+
+        TOKEN_PATH.parent.mkdir(parents=True, exist_ok=True)
+        TOKEN_PATH.write_text(creds.to_json())
+
+    return build("calendar", "v3", credentials=creds)
 
 
 @mcp.tool
