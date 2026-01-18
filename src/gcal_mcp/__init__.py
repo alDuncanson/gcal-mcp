@@ -14,7 +14,7 @@ from googleapiclient.errors import HttpError
 
 __version__ = "0.1.4"
 
-SCOPES = ["https://www.googleapis.com/auth/calendar.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/calendar.events.readonly"]
 
 TOKEN_PATH = Path.home() / ".config" / "gcal-mcp" / "token.json"
 
@@ -202,34 +202,6 @@ def search_events(
         return f"Error searching events: {error}"
 
 
-@mcp.tool
-def list_calendars() -> str:
-    """List all available calendars.
-
-    Returns:
-        List of calendar names and IDs
-    """
-    try:
-        service = get_calendar_service()
-        calendars_result = service.calendarList().list().execute()
-        calendars = calendars_result.get("items", [])
-
-        if not calendars:
-            return "No calendars found."
-
-        lines = ["Available calendars:"]
-        for cal in calendars:
-            name = cal.get("summary", "(No name)")
-            cal_id = cal.get("id")
-            primary = " (primary)" if cal.get("primary") else ""
-            lines.append(f"• {name}{primary}\n  ID: {cal_id}")
-
-        return "\n".join(lines)
-
-    except HttpError as error:
-        return f"Error listing calendars: {error}"
-
-
 def set_credentials(credentials_path: Path) -> None:
     """Override OAuth credentials from a JSON file.
 
@@ -255,12 +227,14 @@ def main():
         description="MCP server for querying Google Calendar events",
     )
     parser.add_argument(
-        "-v", "--version",
+        "-v",
+        "--version",
         action="version",
         version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
-        "-c", "--credentials",
+        "-c",
+        "--credentials",
         type=Path,
         metavar="FILE",
         help="Path to OAuth credentials JSON file (overrides default credentials)",

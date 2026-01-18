@@ -9,7 +9,7 @@
 ## Architecture
 - **Single-module MCP server** using FastMCP framework (`fastmcp<3`)
 - All code lives in `src/gcal_mcp/__init__.py`
-- Exposes 4 tools: `get_upcoming_events`, `get_events_for_date`, `search_events`, `list_calendars`
+- Exposes 3 tools: `get_upcoming_events`, `get_events_for_date`, `search_events`
 - OAuth credentials stored at `~/.config/gcal-mcp/token.json`
 - Uses Google Calendar API v3 (read-only scope)
 
